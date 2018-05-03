@@ -11,21 +11,25 @@ end
 
 def pickup_strings(src)
 	src.each { |code|
-		char = code.scan(/[\"'].*?[\"']/)
+		char = code.scan(/[\"'“].*?[\"'”]/)
 		char.each { |string|
 			$_ch_compiler_inner_string_type_ << string
-			code.sub!(/\".*?\"/,"\#{$_ch_compiler_inner_string_type_[#{$_ch_compiler_inner_string_type_.length}]}");
+			code.sub!(/[\"'“].*?[\"'”]/,"\#{$_ch_compiler_inner_string_type_[#{$_ch_compiler_inner_string_type_.length}]}");
 		}
 	}
 
 	$_ch_compiler_inner_string_type_.each { |string|
 		string.gsub!('\换行', '\n')
+
+		string.gsub!('%整型', '%d')
+		string.gsub!('％整型', '%d')
 	}
 end
 
 def replace_symbol(src)
 	src.each { |code|
 		code.gsub!('；',';')
+		code.gsub!('，',',')
 		code.gsub!('（','(')
 		code.gsub!('）',')')
 		code.gsub!('｛','{')
@@ -41,6 +45,7 @@ def replace_symbol(src)
 		code.gsub!('小于','<')
 		code.gsub!('不等于','!=')
 		code.gsub!('等于','==')
+		code.gsub!('赋值为','=')
 
 		code.gsub!('自增一','++')
 		code.gsub!('自减一','--')
@@ -48,7 +53,13 @@ def replace_symbol(src)
 		code.gsub!('进入循环','{')
 		code.gsub!('循环结束','}')
 
+		code.gsub!('函数开始','{')
+		code.gsub!('函数结束','}')
+
 		code.gsub!('取地址','&')
+
+		code.gsub!('成功','0')
+
 
 	}
 end
@@ -56,6 +67,7 @@ end
 def replace_standard_header(src)
 	src.each { |code|
 		code.gsub!('导入',             '#include')
+
 		code.gsub!('诊断库',           'assert.h')
 		code.gsub!('字符类别测试函数库', 'ctype.h')
 		code.gsub!('错误变量库',        'errno.h')
@@ -76,6 +88,9 @@ end
 
 def replace_keyword(src)
 	src.each { |code|
+		code.gsub!('定义','')
+		code.gsub!('返回值函数','')
+		code.gsub!('无传入参数','void')
 		code.gsub!('整型变量','int')
 
 		code.gsub!('字符型','char')
@@ -121,10 +136,10 @@ end
 
 def replace_standard_function(src)
 	src.each { |code|
-		code.gsub!(/格式化输出/, 'printf')
-		code.gsub!(/输出/, 'puts')
+		code.gsub!('格式化输出', 'printf')
+		code.gsub!('格式化输入', 'scanf')
+		code.gsub!('输出字符串', 'puts')
 		code.gsub!(/ 主函数\(/, ' main(')
-		code.gsub!(/\\换行/, '\n')
 	}
 end
 
@@ -133,13 +148,13 @@ end
 def pickup_variables(src)
 	var_table = Array.new
 		src.each { |code|
-		char = code.scan(/[^[:ascii:]]/)
+		char = code.scan(/[^[:ascii:]]+/)
 		char.each { |var|
-			puts var
 			if var_table.include? var
-				code.sub!(/[^[:ascii:]]/, "_ch_compiler_inner_variable_#{var_table.index(var)}");
+				code.sub!(/[^[:ascii:]]+/, "_ch_compiler_inner_variable_#{var_table.index(var)}");
 			else
 				var_table << var
+				code.sub!(/[^[:ascii:]]+/, "_ch_compiler_inner_variable_#{var_table.index(var)}");
 			end
 		}
 	}
@@ -161,8 +176,19 @@ def recovery_strings(src)
 
 end
 
+src_list = Array.new
 
-f = readlines
+if ARGV.length == 0
+	puts '致命错误：没有输入文件'
+else
+	ARGV.each { |arg|
+		src_list << arg
+	}
+end
+
+src_file = File.new(src_list[0], "r")
+
+f = src_file.readlines
 
 process_wrap(f)
 pickup_strings(f)
@@ -170,13 +196,7 @@ replace_symbol(f)
 replace_keyword(f)
 replace_standard_header(f)
 replace_standard_function(f)
-
-
-tmp_file = File.new("./_temp0.c", "wb")
-f.each { |code|
-	tmp_file.puts code
-}
-
+pickup_variables(f)
 recovery_strings(f)
 
 
