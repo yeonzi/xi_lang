@@ -1,0 +1,222 @@
+#!/usr/bin/env ruby
+# -*- coding: UTF-8 -*-
+
+require 'open4'
+
+$_ch_compiler_inner_string_type_ = Array.new
+
+def process_wrap(src)
+
+end
+
+def pickup_strings(src)
+	src.each { |code|
+		char = code.scan(/[\"'].*?[\"']/)
+		char.each { |string|
+			$_ch_compiler_inner_string_type_ << string
+			code.sub!(/\".*?\"/,"\#{$_ch_compiler_inner_string_type_[#{$_ch_compiler_inner_string_type_.length}]}");
+		}
+	}
+
+	$_ch_compiler_inner_string_type_.each { |string|
+		string.gsub!('\换行', '\n')
+	}
+end
+
+def replace_symbol(src)
+	src.each { |code|
+		code.gsub!('；',';')
+		code.gsub!('（','(')
+		code.gsub!('）',')')
+		code.gsub!('｛','{')
+		code.gsub!('｝','}')
+
+		code.gsub!('加','+')
+		code.gsub!('减','-')
+		code.gsub!('乘','*')
+		code.gsub!('除','/')
+		code.gsub!('大于等于','>=')
+		code.gsub!('小于等于','<=')
+		code.gsub!('大于','>')
+		code.gsub!('小于','<')
+		code.gsub!('不等于','!=')
+		code.gsub!('等于','==')
+
+		code.gsub!('自增一','++')
+		code.gsub!('自减一','--')
+
+		code.gsub!('进入循环','{')
+		code.gsub!('循环结束','}')
+
+		code.gsub!('取地址','&')
+
+	}
+end
+
+def replace_standard_header(src)
+	src.each { |code|
+		code.gsub!('导入',             '#include')
+		code.gsub!('诊断库',           'assert.h')
+		code.gsub!('字符类别测试函数库', 'ctype.h')
+		code.gsub!('错误变量库',        'errno.h')
+		code.gsub!('浮点限制变量库',     'float.h')
+		code.gsub!('限制变量库',        'limits.h')
+		code.gsub!('本地化函数库',      'locale.h')
+		code.gsub!('数学函数库',        'math.h')
+		code.gsub!('非局部跳转库',      'setjmp.h')
+		code.gsub!('信号机制库',        'signal.h')
+		code.gsub!('可变参数表库',      'stdarg.h')
+		code.gsub!('标准宏定义库',      'stddef.h')
+		code.gsub!('标准输入输出库',     'stdio.h')
+		code.gsub!('实用函数库',        'stdlib.h')
+		code.gsub!('字符串处理函数库',   'string.h')
+		code.gsub!('时间函数库',        'time.h')
+	}
+end
+
+def replace_keyword(src)
+	src.each { |code|
+		code.gsub!('整型变量','int')
+
+		code.gsub!('字符型','char')
+		code.gsub!('短整形','short')
+		code.gsub!('整型','int')
+		code.gsub!('无符号型','unsigned')
+		code.gsub!('长整型','long')
+		code.gsub!('浮点型','float')
+		code.gsub!('双精度浮点型','double')
+		code.gsub!('结构体','struct')
+		code.gsub!('联合体','union')
+		code.gsub!('空类型','void')
+		code.gsub!('枚举型','enum')
+		code.gsub!('有符号型','signed')
+		
+		code.gsub!('不可修改的','const')
+		code.gsub!('会发生变化的','volatile')
+		code.gsub!('定义类型','typedef')
+		code.gsub!('自动存储','auto')
+		code.gsub!('使用寄存器存储的','register')
+		code.gsub!('不被销毁的','static')
+		code.gsub!('外部变量','extern')
+
+		code.gsub!('终止','break')
+		code.gsub!('当变量值为','case')
+		code.gsub!('下一轮','continue')
+		code.gsub!('默认情况下','default')
+		code.gsub!('做','do')
+		code.gsub!('此外','else')
+		code.gsub!('否则','else')
+		code.gsub!('循环','for')
+		code.gsub!('跳转到','goto')
+		code.gsub!('如果','if')
+		code.gsub!('返回','return')
+		code.gsub!('观察','switch')
+		code.gsub!('当','while')
+		code.gsub!('只要','while')
+
+		code.gsub!('变量大小','sizeof')
+
+	}
+end
+
+def replace_standard_function(src)
+	src.each { |code|
+		code.gsub!(/格式化输出/, 'printf')
+		code.gsub!(/输出/, 'puts')
+		code.gsub!(/ 主函数\(/, ' main(')
+		code.gsub!(/\\换行/, '\n')
+	}
+end
+
+
+
+def pickup_variables(src)
+	var_table = Array.new
+		src.each { |code|
+		char = code.scan(/[^[:ascii:]]/)
+		char.each { |var|
+			puts var
+			if var_table.include? var
+				code.sub!(/[^[:ascii:]]/, "_ch_compiler_inner_variable_#{var_table.index(var)}");
+			else
+				var_table << var
+			end
+		}
+	}
+
+	$_ch_compiler_inner_string_type_.each { |string|
+		string.gsub!('\换行', '\n')
+	}
+end
+
+def recovery_strings(src)
+	$_ch_compiler_inner_string_type_.reverse!
+
+	src.each { |code|
+		char = code.scan(/\#{\$_ch_compiler_inner_string_type_\[\d+\]}/)
+		char.each { |string|
+			code.sub!(/\#{\$_ch_compiler_inner_string_type_\[\d+\]}/, $_ch_compiler_inner_string_type_.pop);
+		}
+	}
+
+end
+
+
+f = readlines
+
+process_wrap(f)
+pickup_strings(f)
+replace_symbol(f)
+replace_keyword(f)
+replace_standard_header(f)
+replace_standard_function(f)
+
+
+tmp_file = File.new("./_temp0.c", "wb")
+f.each { |code|
+	tmp_file.puts code
+}
+
+recovery_strings(f)
+
+
+tmp_file = File.new("./_temp.c", "wb")
+f.each { |code|
+	tmp_file.puts code
+}
+
+tmp_file.close
+
+pid, stdin, stdout, stderr = Open4::popen4("cc ./_temp.c -o 可执行文件.输出")
+
+e = stderr.readlines
+
+e.each { |err|
+	err.gsub!(' generated', "发生")
+
+	err.gsub!('./_temp.c', '原文件')
+	err.gsub!('errors', '错误')
+	err.gsub!('error', '错误')
+
+	err.gsub!('unknown type name', '未知类型名称')
+	err.gsub!('expected identifier or', '期望标识符或')
+	err.gsub!('use of undeclared identifier', '使用了未声明的标识符')
+	err.gsub!('expected \';\' after expression', '表达式后需要分号')
+
+	if(err.include?('原文件'))
+		puts err
+	end
+}
+
+#File::delete("./_temp.c")
+
+ignored, status = Process::waitpid2 pid
+
+if status.to_i == 0
+	puts '编译通过'
+else
+	puts '编译失败'
+end
+
+exit status.to_i
+
