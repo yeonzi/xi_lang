@@ -131,14 +131,62 @@ def replace_keyword(src)
 
 		code.gsub!('变量大小','sizeof')
 
+		code.gsub!('指向指针的指针','**')
+		code.gsub!('指针','*')
+
 	}
 end
 
 def replace_standard_function(src)
 	src.each { |code|
+		#stdio 变量
+		code.gsub!('标准输入', 'stdin')
+		code.gsub!('标准输出', 'stdout')
+		code.gsub!('标准错误', 'stderr')
+
+		code.gsub!('文件类型变量', 'FILE')
+
+		# code.gsub!('读取','r')
+		# code.gsub!('写入','w')
+		# code.gsub!('追加','a')
+
+		code.gsub!('打开文件', 'fopen')
+		code.gsub!('打开文件到流', 'freopen')
+		code.gsub!('关闭文件', 'fclose')
+
+		code.gsub!('刷新文件', 'fflush')
+		code.gsub!('删除文件', 'remove')
+		code.gsub!('重命名文件', 'rename')
+
+		code.gsub!('创建临时文件', 'tmpfile')
+
 		code.gsub!('格式化输出', 'printf')
+		code.gsub!('格式化输出到文件', 'fprintf')
+		code.gsub!('格式化输出到字符串', 'sprintf')
 		code.gsub!('格式化输入', 'scanf')
+		code.gsub!('格式化输入自文件', 'fscanf')
+		code.gsub!('格式化输入自字符串', 'sscanf')
+
+		code.gsub!('从文件读取字符', 'fgetc')
+		code.gsub!('从文件读取字符串', 'fgets')
+		code.gsub!('向文件写入字符', 'fputc')
+		code.gsub!('向文件写入字符串', 'fputs')
+
+		code.gsub!('输入字符', 'getchar')
+		code.gsub!('输入字符串', 'gets')
+		code.gsub!('输出字符', 'putchar')
 		code.gsub!('输出字符串', 'puts')
+		code.gsub!('送回一个字符', 'ungetc')
+
+		code.gsub!('从文件读取', 'fread')
+		code.gsub!('向文件写入', 'fwrite')
+
+		code.gsub!('设置输入位置', 'fseek')
+		code.gsub!('获得输入位置', 'ftell')
+		code.gsub!('重置文件流', 'rewind')
+		code.gsub!('记录输入位置', 'fgetops')
+		code.gsub!('恢复输入位置', 'fsetops')
+
 		code.gsub!(/ 主函数\(/, ' main(')
 	}
 end
@@ -228,7 +276,7 @@ e.each { |err|
 	end
 }
 
-#File::delete("./_temp.c")
+File::delete("./_temp.c")
 
 ignored, status = Process::waitpid2 pid
 
